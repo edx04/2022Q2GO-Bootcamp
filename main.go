@@ -1,78 +1,72 @@
 package main
 
 import (
-	"encoding/csv"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
+
+	handler "github.com/edx04/2022Q2GO-Bootcamp/internal/Handler"
+	repository "github.com/edx04/2022Q2GO-Bootcamp/internal/Repository"
+	service "github.com/edx04/2022Q2GO-Bootcamp/internal/Service"
+
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
-var pokemons = map[int64]string{}
+func main() {
+	err := godotenv.Load("config/.env")
 
-func UnmarshalData(rows [][]string) {
-	for _, row := range rows {
-		id, _ := strconv.ParseInt(row[0], 0, 0)
-		pokemons[id] = row[1]
-
-	}
-
-}
-
-func ReadCsv(filename string) ([][]string, error) {
-
-	//Open CSV
-	file, err := os.Open(filename)
 	if err != nil {
-		log.Println("Cannot open CSV file:", err)
-		return [][]string{}, err
+		log.Fatal("Error loading .env file!")
 	}
 
+	PORT := os.Getenv("PORT")
+	ENDPOINT_URL := os.Getenv("Endpoint")
+
+	// s, err := server.NewServer(context.Background(), &server.Config{
+	// 	Port:      PORT,
+	// 	JWTSecret: JWT_SECRET,
+	// })
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	file, err := os.Create("data/data.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("File created successfully")
 	defer file.Close()
 
-	reader := csv.NewReader(file)
-	rows, err := reader.ReadAll()
+	repo := repository.NewQuoteRepo("data/data.csv")
+	client := repository.NewClientRepo(ENDPOINT_URL)
 
-	if err != nil {
-		log.Println("Cannot read CSV file:", err)
+	service := service.NewQuoteService(repo, client)
+
+	handler := handler.NewHandlerQuote(service)
+
+	handler.GetQuoteByIdHandlers()
+
+	r := mux.NewRouter()
+
+	Routes(r, handler)
+
+	srv := &http.Server{
+		Handler: r,
+		Addr:    PORT,
+		// Good practice: enforce timeouts for servers you create!
+		//WriteTimeout: 15 * time.Second,
+		//ReadTimeout:  15 * time.Second,
 	}
 
-	return rows, nil
+	log.Println("Starting server Port", PORT)
+	log.Fatal(srv.ListenAndServe())
 }
 
-func handlerGetPokemonID(w http.ResponseWriter, r *http.Request) {
-
-	res, _ := ReadCsv("data.csv")
-	UnmarshalData(res)
-	ids := strings.TrimPrefix(r.URL.Path, "/pokemon/")
-
-	if len(ids) == 0 {
-		fmt.Println("id is missing in parameters")
-		w.Write([]byte("id is missing in parameters"))
-	}
-
-	id, _ := strconv.ParseInt(ids, 0, 0)
-	val, ok := pokemons[id]
-	if !ok {
-		log.Println("id is invalid")
-		w.Write([]byte("id is invalid"))
-	}
-
-	w.Write([]byte(val + "\n"))
-}
-
-func main() {
-
-	m := http.NewServeMux()
-	m.HandleFunc("/pokemon/", handlerGetPokemonID)
-
-	s := &http.Server{
-		Addr:    ":8080",
-		Handler: m,
-	}
-
-	log.Fatal(s.ListenAndServe())
+func Routes(r *mux.Router, handler handler.QuoteHandler) {
+	r.HandleFunc("/Quote/{id}", handler.GetQuoteByIdHandlers()).Methods("GET")
+	r.HandleFunc("/RandomQuote", handler.GenerateQuoteHandlers()).Methods("POST")
 
 }
