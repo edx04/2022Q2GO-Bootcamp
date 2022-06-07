@@ -68,5 +68,6 @@ func main() {
 func Routes(r *mux.Router, handler handler.QuoteHandler) {
 	r.HandleFunc("/Quote/{id}", handler.GetQuoteByIdHandlers()).Methods("GET")
 	r.HandleFunc("/RandomQuote", handler.GenerateQuoteHandlers()).Methods("POST")
+	r.HandleFunc("/concurrentlyQuotes", handler.ConcurrentlyQuotesHandlers()).Methods("GET")
 
 }

@@ -13,6 +13,7 @@ import (
 type QuoteHandler interface {
 	GetQuoteByIdHandlers() http.HandlerFunc
 	GenerateQuoteHandlers() http.HandlerFunc
+	ConcurrentlyQuotesHandlers() http.HandlerFunc
 }
 
 type GetQuoteByIdRequest struct {
@@ -35,6 +36,7 @@ type GenerateQuoteResponse struct {
 type QuoteService interface {
 	GenerateQuote() (*entity.Quote, error)
 	FindQuoteById(id int64) (*entity.Quote, error)
+	GetQuoteWorkerPool(type_ string, items string, itemsPerWorker string) (result []*entity.Quote, errors error)
 }
 
 type quoteHandler struct {
@@ -72,7 +74,6 @@ func (q *quoteHandler) GetQuoteByIdHandlers() http.HandlerFunc {
 }
 
 func (q *quoteHandler) GenerateQuoteHandlers() http.HandlerFunc {
-	fmt.Println("heree")
 	return func(w http.ResponseWriter, r *http.Request) {
 		quote, err := q.service.GenerateQuote()
 
@@ -89,6 +90,41 @@ func (q *quoteHandler) GenerateQuoteHandlers() http.HandlerFunc {
 			Text:   quote.Text,
 			Status: true,
 		})
+
+	}
+}
+
+func (q *quoteHandler) ConcurrentlyQuotesHandlers() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		type_ := query["type"][0]
+		items := query["items"][0]
+		items_workers := query["items_per_workers"][0]
+
+		if !(type_ == "0" || type_ == "1") {
+			http.Error(w, "The parameter type can only be 0(odd) or 1(even)", http.StatusBadRequest)
+			return
+		}
+
+		quotes, _ := q.service.GetQuoteWorkerPool(type_, items, items_workers)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		quotes_res := []GenerateQuoteResponse{}
+
+		for _, quote := range quotes {
+
+			quotes_res = append(quotes_res, GenerateQuoteResponse{
+				Id:     quote.Id,
+				Author: quote.Author,
+				Text:   quote.Text,
+				Status: true,
+			})
+
+		}
+
+		json.NewEncoder(w).Encode(quotes_res)
 
 	}
 }

@@ -27,6 +27,12 @@ func (mr *mockQuoteRepository) InsertQuote(quote *entity.Quote) error {
 	return arg.Error(0)
 }
 
+func (mr *mockQuoteRepository) QuoteWorkerPool(type_ int64, items int, itemsPerWorker int) (result []*entity.Quote, errors error) {
+	log.Printf("REPO MOCK: InsertQuote ")
+	arg := mr.Called(type_, items, itemsPerWorker)
+	return arg.Get(0).([]*entity.Quote), arg.Error(1)
+}
+
 type mockClientRepository struct {
 	mock.Mock
 }
