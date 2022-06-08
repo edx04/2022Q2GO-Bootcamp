@@ -66,7 +66,7 @@ func (qs *quoteService) FindQuoteById(id int64) (*entity.Quote, error) {
 
 func (qs *quoteService) GetQuoteWorkerPool(type_ string, items string, itemsPerWorker string) (result []*entity.Quote, errors error) {
 	var type_int int64
-	if type_ == "odd" || type_ == "ODD" {
+	if type_ == "ODD" {
 		type_int = 0
 	} else {
 		type_int = 1

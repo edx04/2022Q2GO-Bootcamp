@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/edx04/2022Q2GO-Bootcamp/internal/entity"
 	"github.com/gorilla/mux"
@@ -120,8 +121,10 @@ func (q *quoteHandler) ConcurrentlyQuotesHandlers() http.HandlerFunc {
 		items := value[1]
 		items_per_worker := value[2]
 
-		if !(type_ == "odd" || type_ == "even" || type_ == "ODD" || type_ == "EVEN") {
-			http.Error(w, "The parameter type can only odd or even", http.StatusBadRequest)
+		type_ = strings.ToUpper(type_)
+
+		if !(type_ == "ODD" || type_ == "EVEN") {
+			http.Error(w, "The parameter type can only be odd or even", http.StatusBadRequest)
 			return
 		}
 
