@@ -12,6 +12,11 @@ import (
 	"github.com/edx04/2022Q2GO-Bootcamp/internal/entity"
 )
 
+const (
+	ODD  = 0
+	EVEN = 1
+)
+
 type QuoteRepository interface {
 	InsertQuote(quote *entity.Quote) error
 	GetQuoteById(id int64) (*entity.Quote, error)
@@ -149,13 +154,13 @@ func (qr *quoteRepository) QuoteWorkerPool(type_ int64, items int, itemsPerWorke
 
 			id, _ := strconv.ParseInt(row[0], 0, 0)
 
-			if type_ == 0 {
+			if type_ == ODD {
 				if id%2 == 0 {
 					pool.queue <- row
 					count++
 				}
 
-			} else if type_ == 1 {
+			} else if type_ == EVEN {
 				if id%2 != 0 {
 					pool.queue <- row
 					count++
