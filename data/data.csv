@@ -1,0 +1,6 @@
+0,Bdale Garbee,Life is too short to run proprietary software.
+1,Tony Hoare,"There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies. The first method is far more difficult."
+2,Rob Pike,When there is no type hierarchy you don’t have to manage the type hierarchy.
+3,Ward Cunningham,It was a turning point in my programming career when I realized that I didn't have to win every argument.
+4,David Parnas,"A computer is a stupid machine with the ability to do incredibly smart things, while computer programmers are smart people with the ability to do incredibly stupid things. They are, in short, a perfect match."
+5,Fred Brooks,"The first false assumption that underlies the scheduling of systems programming is that all will go well, i.e., that each task will hike only as long as it ""ought"" to take. A large programming effort, however, consists of many tasks, some chained end-to-end. The probability that each will go well becomes vanishingly small."
