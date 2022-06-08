@@ -76,7 +76,11 @@ func (qr *quoteRepository) GetQuoteById(_id int64) (*entity.Quote, error) {
 	}
 
 	for _, row := range rows {
-		id, _ := strconv.ParseInt(row[0], 0, 0)
+		id, err := strconv.ParseInt(row[0], 0, 0)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
 		if id == _id {
 			return &entity.Quote{
 				Id:     id,

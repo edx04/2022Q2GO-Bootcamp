@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -51,15 +52,19 @@ func NewHandlerQuote(service QuoteService) QuoteHandler {
 }
 
 func (q *quoteHandler) GetQuoteByIdHandlers() http.HandlerFunc {
-	fmt.Println("holaaa")
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
-		fmt.Println("id : ", params["id"])
+		log.Println("id : ", params["id"])
 
-		id, _ := strconv.ParseInt(params["id"], 0, 0)
+		id, err := strconv.ParseInt(params["id"], 0, 0)
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, ErrParamId.Error(), http.StatusBadRequest)
+			return
+		}
+
 		quote, err := q.service.FindQuoteById(id)
-
-		fmt.Println("here", quote)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -97,17 +102,35 @@ func (q *quoteHandler) GenerateQuoteHandlers() http.HandlerFunc {
 func (q *quoteHandler) ConcurrentlyQuotesHandlers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
-		type_ := query["type"][0]
-		items := query["items"][0]
-		items_workers := query["items_per_workers"][0]
 
-		if !(type_ == "0" || type_ == "1") {
-			http.Error(w, "The parameter type can only be 0(odd) or 1(even)", http.StatusBadRequest)
+		params := []string{"type", "items", "items_per_workers"}
+		value := []string{}
+
+		//params validation
+		for _, param := range params {
+			val, ok := query[param]
+			if !ok {
+				http.Error(w, fmt.Sprintf("missing %s parameter", param), http.StatusBadRequest)
+				return
+			}
+			value = append(value, val[0])
+		}
+
+		type_ := value[0]
+		items := value[1]
+		items_per_worker := value[2]
+
+		if !(type_ == "odd" || type_ == "even" || type_ == "ODD" || type_ == "EVEN") {
+			http.Error(w, "The parameter type can only odd or even", http.StatusBadRequest)
 			return
 		}
 
-		quotes, _ := q.service.GetQuoteWorkerPool(type_, items, items_workers)
+		quotes, err := q.service.GetQuoteWorkerPool(type_, items, items_per_worker)
 
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		quotes_res := []GenerateQuoteResponse{}
 
 		for _, quote := range quotes {
@@ -129,7 +152,7 @@ func (q *quoteHandler) ConcurrentlyQuotesHandlers() http.HandlerFunc {
 
 func (q *quoteHandler) responseWriter(w http.ResponseWriter, httpStatus int, response ...interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(httpStatus)
 	json.NewEncoder(w).Encode(response)
 
 }

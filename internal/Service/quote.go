@@ -65,9 +65,25 @@ func (qs *quoteService) FindQuoteById(id int64) (*entity.Quote, error) {
 }
 
 func (qs *quoteService) GetQuoteWorkerPool(type_ string, items string, itemsPerWorker string) (result []*entity.Quote, errors error) {
-	type_int, _ := strconv.ParseInt(type_, 0, 0)
-	items_int, _ := strconv.ParseInt(items, 0, 0)
-	itemsPerWorker_int, _ := strconv.ParseInt(items, 0, 0)
+	var type_int int64
+	if type_ == "odd" || type_ == "ODD" {
+		type_int = 0
+	} else {
+		type_int = 1
+	}
+
+	items_int, err := strconv.ParseInt(items, 0, 0)
+
+	if err != nil {
+		return nil, ErrParamItems
+	}
+
+	itemsPerWorker_int, err := strconv.ParseInt(items, 0, 0)
+
+	if err != nil {
+		return nil, ErrItemsPerWorker
+	}
+
 	quotes, err := qs.repo.QuoteWorkerPool(type_int, int(items_int), int(itemsPerWorker_int))
 	if err != nil {
 		return nil, err
