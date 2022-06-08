@@ -14,6 +14,7 @@ type QuoteHandler interface {
 	GetQuoteByIdHandlers() http.HandlerFunc
 	GenerateQuoteHandlers() http.HandlerFunc
 	ConcurrentlyQuotesHandlers() http.HandlerFunc
+	responseWriter(w http.ResponseWriter, httpStatus int, response ...interface{})
 }
 
 type GetQuoteByIdRequest struct {
@@ -50,6 +51,7 @@ func NewHandlerQuote(service QuoteService) QuoteHandler {
 }
 
 func (q *quoteHandler) GetQuoteByIdHandlers() http.HandlerFunc {
+	fmt.Println("holaaa")
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
 		fmt.Println("id : ", params["id"])
@@ -57,14 +59,14 @@ func (q *quoteHandler) GetQuoteByIdHandlers() http.HandlerFunc {
 		id, _ := strconv.ParseInt(params["id"], 0, 0)
 		quote, err := q.service.FindQuoteById(id)
 
+		fmt.Println("here", quote)
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(GetQuoteByIdResponse{
+		q.responseWriter(w, http.StatusOK, GetQuoteByIdResponse{
 			Author: quote.Author,
 			Text:   quote.Text,
 			Status: true,
@@ -82,9 +84,7 @@ func (q *quoteHandler) GenerateQuoteHandlers() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(GenerateQuoteResponse{
+		q.responseWriter(w, http.StatusCreated, GenerateQuoteResponse{
 			Id:     quote.Id,
 			Author: quote.Author,
 			Text:   quote.Text,
@@ -108,9 +108,6 @@ func (q *quoteHandler) ConcurrentlyQuotesHandlers() http.HandlerFunc {
 
 		quotes, _ := q.service.GetQuoteWorkerPool(type_, items, items_workers)
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
 		quotes_res := []GenerateQuoteResponse{}
 
 		for _, quote := range quotes {
@@ -124,7 +121,15 @@ func (q *quoteHandler) ConcurrentlyQuotesHandlers() http.HandlerFunc {
 
 		}
 
-		json.NewEncoder(w).Encode(quotes_res)
+		q.responseWriter(w, http.StatusOK, quotes_res)
 
 	}
+
+}
+
+func (q *quoteHandler) responseWriter(w http.ResponseWriter, httpStatus int, response ...interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(response)
+
 }
